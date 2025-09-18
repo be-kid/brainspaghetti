@@ -1,49 +1,35 @@
+version: "3.9"
 services:
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    build: ./backend
     container_name: brainspaghetti-backend
     ports:
       - "3000:3000"
-    environment:
-      - DB_HOST=db
-      - DB_PORT=3306
-      - DB_USERNAME=user
-      - DB_PASSWORD=password
-      - DB_DATABASE=brainspaghetti
-    volumes:
-      - ./backend:/usr/src/app
-    command: pnpm run start:dev
     depends_on:
-      db:
-        condition: service_healthy
-    networks:
-      - brainspaghetti-net
+      - mysql
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    environment:
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=spaghetti
+      - DB_PASSWORD=spaghetti
+      - DB_NAME=brainspaghetti
 
-  db:
-    image: mysql:8.0
-    container_name: brainspaghetti-db
+  mysql:
+    image: mysql:8
+    container_name: brainspaghetti-mysql
     restart: always
     environment:
+      MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: brainspaghetti
-      MYSQL_USER: user
-      MYSQL_PASSWORD: password
-      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_USER: spaghetti
+      MYSQL_PASSWORD: spaghetti
     ports:
-      - "3306:3306"
+      - "3307:3306" # 로컬에서 3307 포트로 접속
     volumes:
-      - db-data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - brainspaghetti-net
+      - mysql_data:/var/lib/mysql
 
 volumes:
-  db-data:
-
-networks:
-  brainspaghetti-net:
+  mysql_data:
