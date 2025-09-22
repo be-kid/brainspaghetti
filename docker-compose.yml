@@ -2,12 +2,12 @@ version: '3.8'
 services:
   backend:
     build:
-      context: .
-      dockerfile: ./backend/Dockerfile
+      context: ./backend
     ports:
       - "3000:3000"
     volumes:
       - ./backend:/usr/src/app
+      - /usr/src/app/node_modules # Keep node_modules inside container
     depends_on:
       db:
         condition: service_healthy
