@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Injectable, UnauthorizedException, NotFoundException } from '@nestjs/common'; // Import NotFoundException
 import { JwtService } from '@nestjs/jwt'; // Import JwtService
 import * as bcrypt from 'bcrypt';
 import { User } from './entities/user.entity';
@@ -46,5 +46,21 @@ export class UserService {
     const accessToken = this.jwtService.sign(payload);
 
     return { accessToken };
+  }
+
+  async findById(id: number): Promise<User> {
+    const user = await this.userRepository.findById(id);
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found.`);
+    }
+    return user;
+  }
+
+  async deleteUser(id: number): Promise<void> {
+    const user = await this.userRepository.findById(id);
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found.`);
+    }
+    await this.userRepository.deleteUser(id);
   }
 }

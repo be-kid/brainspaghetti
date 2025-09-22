@@ -6,12 +6,13 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UserModule } from './modules/user/user.module';
 import { PostModule } from './modules/post/post.module';
+import { AuthModule } from './auth/auth.module'; // Import AuthModule
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '../.env',
+      envFilePath: '../../.env',
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -39,6 +40,7 @@ import { PostModule } from './modules/post/post.module';
     }),
     UserModule,
     PostModule,
+    AuthModule, // Import AuthModule here
   ],
   controllers: [AppController],
   providers: [AppService],
