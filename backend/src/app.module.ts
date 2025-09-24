@@ -7,6 +7,8 @@ import { AppService } from './app.service';
 import { UserModule } from './modules/user/user.module';
 import { PostModule } from './modules/post/post.module';
 import { AuthModule } from './auth/auth.module'; // Import AuthModule
+import { AiModule } from './ai/ai.module';
+import { VectorModule } from './vector/vector.module';
 
 @Module({
   imports: [
@@ -40,7 +42,9 @@ import { AuthModule } from './auth/auth.module'; // Import AuthModule
     }),
     UserModule,
     PostModule,
-    AuthModule, // Import AuthModule here
+    AuthModule,
+    AiModule,
+    VectorModule, // Import AuthModule here
   ],
   controllers: [AppController],
   providers: [AppService],

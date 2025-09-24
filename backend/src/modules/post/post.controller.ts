@@ -17,6 +17,11 @@ export class PostController {
     return this.postService.create(createPostDto, user);
   }
 
+  @Get('/map')
+  getPostsMap() {
+    return this.postService.getPostsMap();
+  }
+
   @Get('/')
   findAll() {
     return this.postService.findAll();
