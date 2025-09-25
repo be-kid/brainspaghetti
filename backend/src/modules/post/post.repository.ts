@@ -21,7 +21,10 @@ export class PostRepository {
   }
 
   async findAll(): Promise<Post[]> {
-    return this.genericPostRepository.find({ relations: ['author'] });
+    return this.genericPostRepository.find({
+      relations: ['author'],
+      order: { createdAt: 'DESC' }, // Sort by creation date, newest first
+    });
   }
 
   async findById(id: number): Promise<Post | null> {
