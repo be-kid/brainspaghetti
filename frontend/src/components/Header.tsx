@@ -1,8 +1,10 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { Navbar, Nav, Container, NavDropdown } from 'react-bootstrap';
+import { LinkContainer } from 'react-router-bootstrap';
 
 export default function Header() {
-  const { isLoggedIn, logout } = useAuth();
+  const { isLoggedIn, user, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -11,30 +13,46 @@ export default function Header() {
   };
 
   return (
-    <header style={{ padding: '1rem', borderBottom: '1px solid #ccc' }}>
-      <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Link to="/">
-          <img src="/bs.png" alt="BrainSpaghetti 로고" style={{ height: '40px' }} />
-        </Link>
-        <div></div> {/* Empty div to push auth links to the right */}
-        <ul style={{ listStyle: 'none', display: 'flex', gap: '1rem', margin: 0, alignItems: 'center' }}>
-          {isLoggedIn ? (
-            <>
-              <li>
-                <Link to="/profile" title="프로필">
+    <Navbar bg="light" expand="lg" collapseOnSelect>
+      <Container style={{ maxWidth: '80%', margin: '0 auto' }}>
+        <LinkContainer to="/">
+          <Navbar.Brand>
+            <img src="/bs.png" alt="BrainSpaghetti 로고" style={{ height: '40px' }} />
+          </Navbar.Brand>
+        </LinkContainer>
+        <Navbar.Toggle aria-controls="basic-navbar-nav" />
+        <Navbar.Collapse id="basic-navbar-nav">
+          <Nav className="me-auto">
+            {/* Main navigation links can go here if needed in the future */}
+          </Nav>
+          <Nav>
+            {isLoggedIn && user ? (
+              <NavDropdown 
+                title={
                   <div style={{ width: '32px', height: '32px', backgroundColor: '#eee', borderRadius: '50%' }} />
-                </Link>
-              </li>
-              <li><button onClick={handleLogout}>로그아웃</button></li>
-            </>
-          ) : (
-            <>
-              <li><Link to="/login">로그인</Link></li>
-              <li><Link to="/signup">회원가입</Link></li>
-            </>
-          )}
-        </ul>
-      </nav>
-    </header>
+                }
+                id="basic-nav-dropdown" 
+                align="end"
+              >
+                <LinkContainer to="/profile">
+                  <NavDropdown.Item>프로필</NavDropdown.Item>
+                </LinkContainer>
+                <NavDropdown.Divider />
+                <NavDropdown.Item onClick={handleLogout}>로그아웃</NavDropdown.Item>
+              </NavDropdown>
+            ) : (
+              <>
+                <LinkContainer to="/login">
+                  <Nav.Link>로그인</Nav.Link>
+                </LinkContainer>
+                <LinkContainer to="/signup">
+                  <Nav.Link>회원가입</Nav.Link>
+                </LinkContainer>
+              </>
+            )}
+          </Nav>
+        </Navbar.Collapse>
+      </Container>
+    </Navbar>
   );
 }

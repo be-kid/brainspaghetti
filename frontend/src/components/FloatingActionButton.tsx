@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { FaPencilAlt } from 'react-icons/fa'; // Import the pencil icon
 
 const fabStyle: React.CSSProperties = {
   position: 'fixed',
@@ -12,15 +13,16 @@ const fabStyle: React.CSSProperties = {
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
-  fontSize: '2rem',
+  fontSize: '1.5rem', // Adjusted font size for the icon
   textDecoration: 'none',
   boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+  zIndex: 1000, // Ensure it stays on top
 };
 
 export default function FloatingActionButton() {
   return (
     <Link to="/posts/new" style={fabStyle} title="새 글 작성">
-      ✏️
+      <FaPencilAlt />
     </Link>
   );
 }

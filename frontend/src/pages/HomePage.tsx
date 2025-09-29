@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { Network } from 'vis-network';
 import type { Node, Edge, Options } from 'vis-network';
+import { Row, Col, Card, Button } from 'react-bootstrap'; // Import Row, Col, Card, Button
 
 // Common types
 interface Author {
@@ -98,7 +99,7 @@ export default function HomePage() {
     // Inform the user instead of showing a blank map.
     if (nodes.length > 0 && edges.length === 0) {
       setError('연관 관계를 표시하려면 2개 이상의 게시글이 필요합니다.');
-      return; // Do not draw the network
+      return;
     }
 
     const data = { nodes, edges };
@@ -137,23 +138,31 @@ export default function HomePage() {
   // Render functions for each view
   const renderListView = () => (
     <>
-      {posts.length === 0 && !loading && <p>No posts found.</p>}
-      <ul style={{ listStyle: 'none', padding: 0 }}>
+      {posts.length === 0 && !loading && <p>게시글이 없습니다.</p>}
+      <Row xs={1} md={2} className="g-4">
         {posts.map((post) => (
-          <li key={post.id} style={{ marginBottom: '1rem', border: '1px solid #ccc', padding: '1rem' }}>
-            <Link to={`/posts/${post.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-              <h2>{post.title}</h2>
-            </Link>
-            <p>by {post.author.email}</p>
-            <small>{new Date(post.createdAt).toLocaleDateString()}</small>
-          </li>
+          <Col key={post.id}>
+            <Card>
+              <Card.Body>
+                <Card.Title>{post.title}</Card.Title>
+                <Card.Subtitle className="mb-2 text-muted">by {post.author.email}</Card.Subtitle>
+                <Card.Text>
+                  {post.content.substring(0, 100)}...
+                </Card.Text>
+                <Link to={`/posts/${post.id}`}><Button variant="primary">자세히 보기</Button></Link>
+              </Card.Body>
+              <Card.Footer className="text-muted">
+                <small>{new Date(post.createdAt).toLocaleDateString()}</small>
+              </Card.Footer>
+            </Card>
+          </Col>
         ))}
-      </ul>
+      </Row>
       {posts.length > 0 && (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem' }}>
-          <button onClick={() => setPage(p => Math.max(p - 1, 1))} disabled={page <= 1}>이전</button>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginTop: '2rem' }}>
+          <Button onClick={() => setPage(p => Math.max(p - 1, 1))} disabled={page <= 1}>이전</Button>
           <span>Page {page} of {totalPages}</span>
-          <button onClick={() => setPage(p => Math.min(p + 1, totalPages))} disabled={page >= totalPages}>다음</button>
+          <Button onClick={() => setPage(p => Math.min(p + 1, totalPages))} disabled={page >= totalPages}>다음</Button>
         </div>
       )}
     </>
@@ -166,8 +175,8 @@ export default function HomePage() {
   return (
     <div>
       <div style={{ marginBottom: '1rem', display: 'flex', gap: '1rem' }}>
-        <button onClick={() => setViewMode('list')} disabled={viewMode === 'list'}>목록 보기</button>
-        <button onClick={() => setViewMode('map')} disabled={viewMode === 'map'}>마인드맵 보기</button>
+        <Button onClick={() => setViewMode('list')} disabled={viewMode === 'list'}>목록 보기</Button>
+        <Button onClick={() => setViewMode('map')} disabled={viewMode === 'map'}>마인드맵 보기</Button>
       </div>
       <h1>{viewMode === 'list' ? '전체 글' : '마인드맵'}</h1>
       {loading && <p>Loading...</p>}

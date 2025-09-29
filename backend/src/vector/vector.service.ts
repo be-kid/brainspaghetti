@@ -30,6 +30,30 @@ export class VectorService {
     }
   }
 
+  async updateEmbedding(postId: number, embedding: number[], content: string): Promise<void> {
+    const { error } = await this.supabase
+      .from('post_embeddings')
+      .update({ embedding, content })
+      .eq('post_id', postId);
+
+    if (error) {
+      console.error('Error updating embedding in Supabase:', error);
+      throw new InternalServerErrorException('Failed to update embedding.');
+    }
+  }
+
+  async deleteEmbedding(postId: number): Promise<void> {
+    const { error } = await this.supabase
+      .from('post_embeddings')
+      .delete()
+      .eq('post_id', postId);
+
+    if (error) {
+      console.error('Error deleting embedding from Supabase:', error);
+      throw new InternalServerErrorException('Failed to delete embedding.');
+    }
+  }
+
   async getEmbeddingByPostId(postId: number): Promise<number[]> {
     const { data, error } = await this.supabase
       .from('post_embeddings')

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
-// Define the types for our data, consistent with PostListPage
+// Define the types for our data
 interface Author {
   id: number;
   email: string;
@@ -17,7 +18,9 @@ interface Post {
 }
 
 export default function PostDetailPage() {
-  const { id } = useParams<{ id: string }>(); // Get the post ID from the URL
+  const { id } = useParams<{ id: string }>();
+  const { user } = useAuth(); // Get current user
+  const navigate = useNavigate();
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,20 +42,43 @@ export default function PostDetailPage() {
     };
 
     fetchPost();
-  }, [id]); // Re-run the effect if the ID changes
+  }, [id]);
+
+  const handleDelete = async () => {
+    if (window.confirm('Are you sure you want to delete this post?')) {
+      try {
+        await api.delete(`/post/${id}`);
+        alert('Post deleted successfully.');
+        navigate('/');
+      } catch (err) {
+        alert('Failed to delete the post.');
+        console.error(err);
+      }
+    }
+  };
 
   if (loading) return <p>Loading post...</p>;
   if (error) return <p style={{ color: 'red' }}>{error}</p>;
   if (!post) return <p>Post not found.</p>;
 
+  const isAuthor = user?.id === post.author.id;
+
   return (
     <article>
       <h1>{post.title}</h1>
-      <div style={{ color: '#555', marginBottom: '1rem' }}>
-        <span>by {post.author.email}</span>
-        <span style={{ marginLeft: '1rem' }}>
-          {new Date(post.createdAt).toLocaleDateString()}
-        </span>
+      <div style={{ color: '#555', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <span>by {post.author.email}</span>
+          <span style={{ marginLeft: '1rem' }}>
+            {new Date(post.createdAt).toLocaleDateString()}
+          </span>
+        </div>
+        {isAuthor && (
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <Link to={`/posts/${id}/edit`}><button>수정</button></Link>
+            <button onClick={handleDelete} style={{ backgroundColor: '#dc3545', color: 'white' }}>삭제</button>
+          </div>
+        )}
       </div>
       <div style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>
         {post.content}

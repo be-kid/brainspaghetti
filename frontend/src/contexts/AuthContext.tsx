@@ -1,43 +1,62 @@
 import { createContext, useState, useEffect, ReactNode, useContext } from 'react';
+import { jwtDecode } from 'jwt-decode';
+
+interface User {
+  id: number;
+  email: string;
+}
 
 interface AuthContextType {
   isLoggedIn: boolean;
-  login: () => void;
+  user: User | null;
+  login: (token: string) => void;
   logout: () => void;
 }
 
-// Create the context with a default value
+interface JwtPayload {
+  email: string;
+  sub: number; // 'sub' is the standard claim for subject (user ID)
+}
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Create the provider component
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    // Check for a token in local storage on initial load
     const token = localStorage.getItem('accessToken');
     if (token) {
-      setIsLoggedIn(true);
+      try {
+        const decodedToken = jwtDecode<JwtPayload>(token);
+        setUser({ id: decodedToken.sub, email: decodedToken.email });
+      } catch (error) {
+        console.error('Invalid token found in storage', error);
+        localStorage.removeItem('accessToken');
+      }
     }
   }, []);
 
-  const login = () => {
-    setIsLoggedIn(true);
+  const login = (token: string) => {
+    try {
+      const decodedToken = jwtDecode<JwtPayload>(token);
+      setUser({ id: decodedToken.sub, email: decodedToken.email });
+    } catch (error) {
+      console.error('Failed to decode token on login', error);
+    }
   };
 
   const logout = () => {
     localStorage.removeItem('accessToken');
-    setIsLoggedIn(false);
+    setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, login, logout }}>
+    <AuthContext.Provider value={{ isLoggedIn: !!user, user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-// Create a custom hook to use the auth context
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {

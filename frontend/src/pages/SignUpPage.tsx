@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import { Form, Button, Alert } from 'react-bootstrap'; // Import Form, Button, Alert
 
 export default function SignUpPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [passwordConfirm, setPasswordConfirm] = useState(''); // Add state for password confirmation
+  const [passwordConfirm, setPasswordConfirm] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -14,9 +15,8 @@ export default function SignUpPage() {
     e.preventDefault();
     setError(null);
 
-    // Check if passwords match
     if (password !== passwordConfirm) {
-      setError('Passwords do not match.');
+      setError('비밀번호가 일치하지 않습니다.');
       return;
     }
 
@@ -24,13 +24,13 @@ export default function SignUpPage() {
 
     try {
       await api.post('/user/signup', { email, password });
-      alert('Sign up successful! Please log in.');
+      alert('회원가입 성공! 로그인해주세요.');
       navigate('/login');
     } catch (err: any) {
       if (err.response && err.response.data) {
-        setError(err.response.data.message || 'An error occurred during sign up.');
+        setError(err.response.data.message || '회원가입 중 오류가 발생했습니다.');
       } else {
-        setError('An unknown error occurred.');
+        setError('알 수 없는 오류가 발생했습니다.');
       }
       console.error('Sign up failed:', err);
     } finally {
@@ -40,46 +40,47 @@ export default function SignUpPage() {
 
   return (
     <div>
-      <h1>Sign Up</h1>
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: '1rem' }}>
-          <label htmlFor="email">Email</label>
-          <input
-            id="email"
+      <h1>회원가입</h1>
+      <Form onSubmit={handleSubmit}>
+        <Form.Group className="mb-3" controlId="formBasicEmail">
+          <Form.Label>이메일 주소</Form.Label>
+          <Form.Control
             type="email"
+            placeholder="이메일을 입력하세요"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            style={{ width: '100%', padding: '0.5rem' }}
           />
-        </div>
-        <div style={{ marginBottom: '1rem' }}>
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
+        </Form.Group>
+
+        <Form.Group className="mb-3" controlId="formBasicPassword">
+          <Form.Label>비밀번호</Form.Label>
+          <Form.Control
             type="password"
+            placeholder="비밀번호를 입력하세요"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            style={{ width: '100%', padding: '0.5rem' }}
           />
-        </div>
-        <div style={{ marginBottom: '1rem' }}>
-          <label htmlFor="password-confirm">Confirm Password</label>
-          <input
-            id="password-confirm"
+        </Form.Group>
+
+        <Form.Group className="mb-3" controlId="formConfirmPassword">
+          <Form.Label>비밀번호 확인</Form.Label>
+          <Form.Control
             type="password"
+            placeholder="비밀번호를 다시 입력하세요"
             value={passwordConfirm}
             onChange={(e) => setPasswordConfirm(e.target.value)}
             required
-            style={{ width: '100%', padding: '0.5rem' }}
           />
-        </div>
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-        <button type="submit" disabled={loading} style={{ padding: '0.5rem 1rem' }}>
-          {loading ? 'Signing up...' : 'Sign Up'}
-        </button>
-      </form>
+        </Form.Group>
+
+        {error && <Alert variant="danger">{error}</Alert>}
+
+        <Button variant="primary" type="submit" disabled={loading}>
+          {loading ? '회원가입 중...' : '회원가입'}
+        </Button>
+      </Form>
     </div>
   );
 }
