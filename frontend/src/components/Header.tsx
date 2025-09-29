@@ -13,26 +13,24 @@ export default function Header() {
   return (
     <header style={{ padding: '1rem', borderBottom: '1px solid #ccc' }}>
       <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Link to="/" style={{ fontWeight: 'bold', textDecoration: 'none', color: 'inherit' }}>
-          BrainSpaghetti
+        <Link to="/">
+          <img src="/bs.png" alt="BrainSpaghetti 로고" style={{ height: '40px' }} />
         </Link>
-        <ul style={{ listStyle: 'none', display: 'flex', gap: '1rem', margin: 0 }}>
-          <li><Link to="/posts">All Posts</Link></li>
-          <li><Link to="/map">Mind Map</Link></li>
-          {isLoggedIn && (
-            <li><Link to="/posts/new">New Post</Link></li>
-          )}
-        </ul>
-        <ul style={{ listStyle: 'none', display: 'flex', gap: '1rem', margin: 0 }}>
+        <div></div> {/* Empty div to push auth links to the right */}
+        <ul style={{ listStyle: 'none', display: 'flex', gap: '1rem', margin: 0, alignItems: 'center' }}>
           {isLoggedIn ? (
             <>
-              <li><Link to="/profile">Profile</Link></li>
-              <li><button onClick={handleLogout}>Logout</button></li>
+              <li>
+                <Link to="/profile" title="프로필">
+                  <div style={{ width: '32px', height: '32px', backgroundColor: '#eee', borderRadius: '50%' }} />
+                </Link>
+              </li>
+              <li><button onClick={handleLogout}>로그아웃</button></li>
             </>
           ) : (
             <>
-              <li><Link to="/login">Login</Link></li>
-              <li><Link to="/signup">Sign Up</Link></li>
+              <li><Link to="/login">로그인</Link></li>
+              <li><Link to="/signup">회원가입</Link></li>
             </>
           )}
         </ul>

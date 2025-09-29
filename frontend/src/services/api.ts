@@ -18,4 +18,20 @@ api.interceptors.request.use(
   },
 );
 
+// Add a response interceptor to handle 401 errors globally
+api.interceptors.response.use(
+  (response) => response, // Pass through successful responses
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      // If we get a 401, the token is invalid or expired
+      localStorage.removeItem('accessToken');
+      // We don't use useAuth here as this is not a React component
+      // Redirecting is the simplest way to reset the app state
+      alert('세션이 만료되었습니다. 다시 로그인해주세요.');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  },
+);
+
 export default api;
