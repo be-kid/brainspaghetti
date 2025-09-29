@@ -27,6 +27,35 @@ export class PostRepository {
     });
   }
 
+  async findAllPaginated(page: number, limit: number): Promise<[Post[], number]> {
+    const skip = (page - 1) * limit;
+    return this.genericPostRepository.findAndCount({
+      relations: ['author'],
+      order: { createdAt: 'DESC' },
+      take: limit,
+      skip: skip,
+    });
+  }
+
+  async findAllByAuthorId(authorId: number): Promise<Post[]> {
+    return this.genericPostRepository.find({
+      where: { author: { id: authorId } },
+      relations: ['author'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async findByAuthorIdPaginated(authorId: number, page: number, limit: number): Promise<[Post[], number]> {
+    const skip = (page - 1) * limit;
+    return this.genericPostRepository.findAndCount({
+      where: { author: { id: authorId } },
+      relations: ['author'],
+      order: { createdAt: 'DESC' },
+      take: limit,
+      skip: skip,
+    });
+  }
+
   async findById(id: number): Promise<Post | null> {
     return this.genericPostRepository.findOne({ where: { id }, relations: ['author'] });
   }

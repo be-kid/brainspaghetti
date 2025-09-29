@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Req, Get, Param, ParseIntPipe, Patch, Delete, HttpCode, HttpStatus } from '@nestjs/common'; // Add Delete, HttpCode, HttpStatus
+import { Controller, Post, Body, UseGuards, Req, Get, Param, ParseIntPipe, Patch, Delete, HttpCode, HttpStatus, Query, DefaultValuePipe } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport'; // Import AuthGuard
 import { PostService } from './post.service';
 import { CreatePostDto } from './dto/create-post.dto';
@@ -22,9 +22,30 @@ export class PostController {
     return this.postService.getPostsMap();
   }
 
+  @UseGuards(AuthGuard('jwt'))
+  @Get('/me/map')
+  getMyPostsMap(@Req() req: Request) {
+    const user = req.user as User;
+    return this.postService.getMyPostsMap(user.id);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Get('/me')
+  findMyPosts(
+    @Req() req: Request,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+  ) {
+    const user = req.user as User;
+    return this.postService.findByAuthorIdPaginated(user.id, page, limit);
+  }
+
   @Get('/')
-  findAll() {
-    return this.postService.findAll();
+  findAll(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+  ) {
+    return this.postService.findAllPaginated(page, limit);
   }
 
   @Get(':id')

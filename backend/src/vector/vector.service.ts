@@ -45,6 +45,23 @@ export class VectorService {
     return data.embedding;
   }
 
+  async getEmbeddingsByPostIds(postIds: number[]): Promise<{ post_id: number; embedding: number[] }[]> {
+    if (postIds.length === 0) {
+      return [];
+    }
+    const { data, error } = await this.supabase
+      .from('post_embeddings')
+      .select('post_id, embedding')
+      .in('post_id', postIds);
+
+    if (error) {
+      console.error('Error fetching embeddings by IDs:', error);
+      throw new InternalServerErrorException('Could not fetch embeddings.');
+    }
+
+    return data || [];
+  }
+
   async getAllEmbeddings(): Promise<{ post_id: number; embedding: number[] }[]> {
     const { data, error } = await this.supabase
       .from('post_embeddings')

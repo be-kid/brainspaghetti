@@ -23,6 +23,16 @@ export interface PostEdge {
   similarity: number;
 }
 
+export interface PaginatedPostsResult {
+  data: Post[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
 @Injectable()
 export class PostService {
   private readonly logger = new Logger(PostService.name); // Initialize logger
@@ -67,6 +77,36 @@ export class PostService {
     return this.postRepository.findAll();
   }
 
+  async findAllPaginated(page: number, limit: number): Promise<PaginatedPostsResult> {
+    const [data, total] = await this.postRepository.findAllPaginated(page, limit);
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
+    };
+  }
+
+  async findByAuthorIdPaginated(authorId: number, page: number, limit: number): Promise<PaginatedPostsResult> {
+    const [data, total] = await this.postRepository.findByAuthorIdPaginated(authorId, page, limit);
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
+    };
+  }
+
   async findById(id: number): Promise<Post> {
     const post = await this.postRepository.findById(id);
     if (!post) {
@@ -92,7 +132,6 @@ export class PostService {
     }
 
     // This is a performance-intensive operation.
-    // For a large number of posts, this should be a scheduled background job.
     this.logger.warn(
       'Calculating all-pairs similarity. This may be slow for many posts.',
     );
@@ -105,7 +144,6 @@ export class PostService {
       const similarPosts = await this.vectorService.searchSimilarPosts(embedding);
 
       for (const similar of similarPosts) {
-        // Ensure source < target to create a unique key and avoid self-loops
         if (post_id === similar.post_id) continue;
 
         const source = Math.min(post_id, similar.post_id);
@@ -124,6 +162,49 @@ export class PostService {
     }
 
     this.logger.log(`Generated map with ${nodes.length} nodes and ${edges.length} edges.`);
+    return { nodes, edges };
+  }
+
+  async getMyPostsMap(authorId: number): Promise<{ nodes: PostNode[]; edges: PostEdge[] }> {
+    this.logger.log(`Generating posts map for author ${authorId}...`);
+
+    const userPosts = await this.postRepository.findAllByAuthorId(authorId);
+    const nodes: PostNode[] = userPosts.map((post) => ({
+      id: post.id,
+      title: post.title,
+    }));
+
+    if (userPosts.length < 2) {
+      return { nodes, edges: [] };
+    }
+
+    const postIds = userPosts.map((post) => post.id);
+    const userEmbeddings = await this.vectorService.getEmbeddingsByPostIds(postIds);
+
+    const edges: PostEdge[] = [];
+    const edgeSet = new Set<string>();
+
+    for (const { post_id, embedding } of userEmbeddings) {
+      const similarPosts = await this.vectorService.searchSimilarPosts(embedding);
+      const similarUserPostIds = new Set(similarPosts.map(p => p.post_id).filter(id => postIds.includes(id)));
+
+      for (const similarId of similarUserPostIds) {
+        if (post_id === similarId) continue;
+
+        const source = Math.min(post_id, similarId);
+        const target = Math.max(post_id, similarId);
+        const edgeKey = `${source}-${target}`;
+
+        if (!edgeSet.has(edgeKey)) {
+          // Find the original similarity score
+          const similarity = similarPosts.find(p => p.post_id === similarId)?.similarity || 0;
+          edges.push({ source, target, similarity });
+          edgeSet.add(edgeKey);
+        }
+      }
+    }
+
+    this.logger.log(`Generated map for author ${authorId} with ${nodes.length} nodes and ${edges.length} edges.`);
     return { nodes, edges };
   }
 
