@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
-import { useAuth } from '../contexts/AuthContext'; // Import useAuth
+import { useAuth } from '../contexts/AuthContext';
+import { Form, Button, Alert } from 'react-bootstrap'; // Import Form, Button, Alert
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -9,7 +10,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth(); // Get the login function from context
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,15 +25,15 @@ export default function LoginPage() {
       
       const { accessToken } = response.data;
       localStorage.setItem('accessToken', accessToken);
-      login(); // Update the global state
+      login(accessToken);
       
-      alert('Login successful!');
-      navigate('/'); // Navigate to home page on successful login
+      alert('로그인 성공!');
+      navigate('/');
     } catch (err: any) {
       if (err.response && err.response.data) {
-        setError(err.response.data.message || 'An error occurred during login.');
+        setError(err.response.data.message || '로그인 중 오류가 발생했습니다.');
       } else {
-        setError('An unknown error occurred.');
+        setError('알 수 없는 오류가 발생했습니다.');
       }
       console.error('Login failed:', err);
     } finally {
@@ -42,35 +43,36 @@ export default function LoginPage() {
 
   return (
     <div>
-      <h1>Login</h1>
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: '1rem' }}>
-          <label htmlFor="email">Email</label>
-          <input
-            id="email"
+      <h1>로그인</h1>
+      <Form onSubmit={handleSubmit}>
+        <Form.Group className="mb-3" controlId="formBasicEmail">
+          <Form.Label>이메일 주소</Form.Label>
+          <Form.Control
             type="email"
+            placeholder="이메일을 입력하세요"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            style={{ width: '100%', padding: '0.5rem' }}
           />
-        </div>
-        <div style={{ marginBottom: '1rem' }}>
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
+        </Form.Group>
+
+        <Form.Group className="mb-3" controlId="formBasicPassword">
+          <Form.Label>비밀번호</Form.Label>
+          <Form.Control
             type="password"
+            placeholder="비밀번호를 입력하세요"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            style={{ width: '100%', padding: '0.5rem' }}
           />
-        </div>
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-        <button type="submit" disabled={loading} style={{ padding: '0.5rem 1rem' }}>
-          {loading ? 'Logging in...' : 'Login'}
-        </button>
-      </form>
+        </Form.Group>
+
+        {error && <Alert variant="danger">{error}</Alert>}
+
+        <Button variant="primary" type="submit" disabled={loading}>
+          {loading ? '로그인 중...' : '로그인'}
+        </Button>
+      </Form>
     </div>
   );
 }

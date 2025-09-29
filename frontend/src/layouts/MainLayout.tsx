@@ -1,4 +1,5 @@
 import { Outlet } from 'react-router-dom';
+import { Container } from 'react-bootstrap';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import FloatingActionButton from '../components/FloatingActionButton';
@@ -10,8 +11,10 @@ export default function MainLayout() {
   return (
     <div>
       <Header />
-      <main style={{ padding: '1rem' }}>
-        <Outlet />
+      <main>
+        <Container fluid className="px-4" style={{ marginTop: '2rem', maxWidth: '80%', margin: '2rem auto' }}>
+          <Outlet />
+        </Container>
       </main>
       <Footer />
       {isLoggedIn && <FloatingActionButton />}
