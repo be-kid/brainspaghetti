@@ -21,6 +21,9 @@ export default function MindMapPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const [threshold, setThreshold] = useState<number>(0.9);
+  const [sliderThreshold, setSliderThreshold] = useState<number>(0.9);
+  const [k, setK] = useState<number>(3);
 
   useEffect(() => {
     const drawMap = async () => {
@@ -34,7 +37,7 @@ export default function MindMapPage() {
           nodes: PostNode[];
           edges: PostEdge[];
         }>("/post/map", {
-          params: { threshold: 0.9, k: 3, maxNodes: 200, maxEdges: 2000 },
+          params: { threshold, k, maxNodes: 200, maxEdges: 2000 },
         });
         const { nodes: apiNodes, edges: apiEdges } = response.data;
 
@@ -96,11 +99,46 @@ export default function MindMapPage() {
     };
 
     drawMap();
-  }, [navigate]);
+  }, [navigate, threshold, k]);
 
   return (
     <div>
       <h1>Mind Map</h1>
+      <div
+        style={{
+          display: "flex",
+          gap: "1rem",
+          alignItems: "center",
+          marginBottom: "0.75rem",
+        }}
+      >
+        <label style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <span>유사도 임계값: {sliderThreshold.toFixed(2)}</span>
+          <input
+            type="range"
+            min={0.8}
+            max={0.98}
+            step={0.01}
+            value={sliderThreshold}
+            onChange={(e) => setSliderThreshold(parseFloat(e.target.value))}
+            onMouseUp={() => setThreshold(sliderThreshold)}
+            onTouchEnd={() => setThreshold(sliderThreshold)}
+          />
+        </label>
+        <label style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <span>연결 개수 k:</span>
+          <select
+            value={k}
+            onChange={(e) => setK(parseInt(e.target.value, 10))}
+          >
+            {[1, 2, 3, 4, 5].map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
       {error && <p style={{ color: "red" }}>{error}</p>}
       <div
         ref={visJsRef}

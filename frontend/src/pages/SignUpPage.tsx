@@ -1,38 +1,55 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import api from '../services/api';
-import { Form, Button, Alert } from 'react-bootstrap'; // Import Form, Button, Alert
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import api from "../services/api";
+import { Form, Button, Alert } from "react-bootstrap"; // Import Form, Button, Alert
+import { useToast } from "../contexts/ToastContext";
+import { SpinnerInline } from "../components/Loading";
 
 export default function SignUpPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
     if (password !== passwordConfirm) {
-      setError('비밀번호가 일치하지 않습니다.');
+      setError("비밀번호가 일치하지 않습니다.");
+      showToast({
+        variant: "danger",
+        message: "비밀번호가 일치하지 않습니다.",
+      });
       return;
     }
 
     setLoading(true);
 
     try {
-      await api.post('/user/signup', { email, password });
-      alert('회원가입 성공! 로그인해주세요.');
-      navigate('/login');
+      await api.post("/user/signup", { email, password });
+      navigate("/login");
     } catch (err: any) {
       if (err.response && err.response.data) {
-        setError(err.response.data.message || '회원가입 중 오류가 발생했습니다.');
+        setError(
+          err.response.data.message || "회원가입 중 오류가 발생했습니다."
+        );
+        showToast({
+          variant: "danger",
+          message:
+            err.response.data.message || "회원가입 중 오류가 발생했습니다.",
+        });
       } else {
-        setError('알 수 없는 오류가 발생했습니다.');
+        setError("알 수 없는 오류가 발생했습니다.");
+        showToast({
+          variant: "danger",
+          message: "알 수 없는 오류가 발생했습니다.",
+        });
       }
-      console.error('Sign up failed:', err);
+      console.error("Sign up failed:", err);
     } finally {
       setLoading(false);
     }
@@ -78,7 +95,13 @@ export default function SignUpPage() {
         {error && <Alert variant="danger">{error}</Alert>}
 
         <Button variant="primary" type="submit" disabled={loading}>
-          {loading ? '회원가입 중...' : '회원가입'}
+          {loading ? (
+            <>
+              <SpinnerInline /> 회원가입 중...
+            </>
+          ) : (
+            "회원가입"
+          )}
         </Button>
       </Form>
     </div>

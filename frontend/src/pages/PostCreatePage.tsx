@@ -1,14 +1,17 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import api from '../services/api';
-import { Form, Button, Alert } from 'react-bootstrap'; // Import Form, Button, Alert
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import api from "../services/api";
+import { Form, Button, Alert } from "react-bootstrap"; // Import Form, Button, Alert
+import { useToast } from "../contexts/ToastContext";
+import { SpinnerInline } from "../components/Loading";
 
 export default function PostCreatePage() {
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -16,17 +19,29 @@ export default function PostCreatePage() {
     setError(null);
 
     try {
-      const response = await api.post('/post', { title, content });
+      const response = await api.post("/post", { title, content });
       const newPostId = response.data.id;
-      alert('게시글이 성공적으로 작성되었습니다!');
       navigate(`/posts/${newPostId}`); // Navigate to the new post's detail page
     } catch (err: any) {
       if (err.response && err.response.data) {
-        setError(err.response.data.message || '게시글 작성 중 오류가 발생했습니다. 로그인 상태를 확인해주세요.');
+        setError(
+          err.response.data.message ||
+            "게시글 작성 중 오류가 발생했습니다. 로그인 상태를 확인해주세요."
+        );
+        showToast({
+          variant: "danger",
+          message:
+            err.response.data.message ||
+            "게시글 작성 중 오류가 발생했습니다. 로그인 상태를 확인해주세요.",
+        });
       } else {
-        setError('알 수 없는 오류가 발생했습니다.');
+        setError("알 수 없는 오류가 발생했습니다.");
+        showToast({
+          variant: "danger",
+          message: "알 수 없는 오류가 발생했습니다.",
+        });
       }
-      console.error('Create post failed:', err);
+      console.error("Create post failed:", err);
     } finally {
       setLoading(false);
     }
@@ -62,7 +77,13 @@ export default function PostCreatePage() {
         {error && <Alert variant="danger">{error}</Alert>}
 
         <Button variant="primary" type="submit" disabled={loading}>
-          {loading ? '작성 중...' : '게시글 작성'}
+          {loading ? (
+            <>
+              <SpinnerInline /> 작성 중...
+            </>
+          ) : (
+            "게시글 작성"
+          )}
         </Button>
       </Form>
     </div>

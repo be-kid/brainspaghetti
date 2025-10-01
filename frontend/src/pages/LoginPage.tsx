@@ -1,16 +1,19 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import api from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
-import { Form, Button, Alert } from 'react-bootstrap'; // Import Form, Button, Alert
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import api from "../services/api";
+import { useAuth } from "../contexts/AuthContext";
+import { Form, Button, Alert } from "react-bootstrap"; // Import Form, Button, Alert
+import { useToast } from "../contexts/ToastContext";
+import { SpinnerInline } from "../components/Loading";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { showToast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,24 +21,31 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const response = await api.post<{ accessToken: string }>('/user/login', {
+      const response = await api.post<{ accessToken: string }>("/user/login", {
         email,
         password,
       });
-      
+
       const { accessToken } = response.data;
-      localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem("accessToken", accessToken);
       login(accessToken);
-      
-      alert('로그인 성공!');
-      navigate('/');
+      navigate("/");
     } catch (err: any) {
       if (err.response && err.response.data) {
-        setError(err.response.data.message || '로그인 중 오류가 발생했습니다.');
+        setError(err.response.data.message || "로그인 중 오류가 발생했습니다.");
+        showToast({
+          variant: "danger",
+          message:
+            err.response.data.message || "로그인 중 오류가 발생했습니다.",
+        });
       } else {
-        setError('알 수 없는 오류가 발생했습니다.');
+        setError("알 수 없는 오류가 발생했습니다.");
+        showToast({
+          variant: "danger",
+          message: "알 수 없는 오류가 발생했습니다.",
+        });
       }
-      console.error('Login failed:', err);
+      console.error("Login failed:", err);
     } finally {
       setLoading(false);
     }
@@ -70,7 +80,13 @@ export default function LoginPage() {
         {error && <Alert variant="danger">{error}</Alert>}
 
         <Button variant="primary" type="submit" disabled={loading}>
-          {loading ? '로그인 중...' : '로그인'}
+          {loading ? (
+            <>
+              <SpinnerInline /> 로그인 중...
+            </>
+          ) : (
+            "로그인"
+          )}
         </Button>
       </Form>
     </div>

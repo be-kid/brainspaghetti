@@ -42,6 +42,9 @@ export default function ProfilePage() {
   const visJsRef = useRef<HTMLDivElement>(null);
   const networkInstance = useRef<Network | null>(null);
   const navigate = useNavigate();
+  const [threshold, setThreshold] = useState<number>(0.9);
+  const [sliderThreshold, setSliderThreshold] = useState<number>(0.9);
+  const [k, setK] = useState<number>(3);
 
   // Common state
   const [loading, setLoading] = useState(true);
@@ -78,7 +81,7 @@ export default function ProfilePage() {
       setError(null);
       try {
         const response = await api.get<MapResponse>("/post/me/map", {
-          params: { threshold: 0.9, k: 3, maxNodes: 200, maxEdges: 2000 },
+          params: { threshold, k, maxNodes: 200, maxEdges: 2000 },
         });
         setMapData(response.data);
       } catch (err) {
@@ -90,7 +93,7 @@ export default function ProfilePage() {
     };
 
     fetchMapData();
-  }, [viewMode]);
+  }, [viewMode, threshold, k]);
 
   // Effect for DRAWING the mind map
   useEffect(() => {
@@ -197,7 +200,47 @@ export default function ProfilePage() {
   );
 
   const renderMapView = () => (
-    <div ref={visJsRef} style={{ height: "70vh", border: "1px solid #ccc" }} />
+    <>
+      <div
+        style={{
+          display: "flex",
+          gap: "1rem",
+          alignItems: "center",
+          marginBottom: "0.75rem",
+        }}
+      >
+        <label style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <span>유사도 임계값: {sliderThreshold.toFixed(2)}</span>
+          <input
+            type="range"
+            min={0.8}
+            max={0.98}
+            step={0.01}
+            value={sliderThreshold}
+            onChange={(e) => setSliderThreshold(parseFloat(e.target.value))}
+            onMouseUp={() => setThreshold(sliderThreshold)}
+            onTouchEnd={() => setThreshold(sliderThreshold)}
+          />
+        </label>
+        <label style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <span>연결 개수 k:</span>
+          <select
+            value={k}
+            onChange={(e) => setK(parseInt(e.target.value, 10))}
+          >
+            {[1, 2, 3, 4, 5].map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <div
+        ref={visJsRef}
+        style={{ height: "70vh", border: "1px solid #ccc" }}
+      />
+    </>
   );
 
   return (
