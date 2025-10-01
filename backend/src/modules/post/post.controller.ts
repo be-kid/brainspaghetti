@@ -1,4 +1,19 @@
-import { Controller, Post, Body, UseGuards, Req, Get, Param, ParseIntPipe, Patch, Delete, HttpCode, HttpStatus, Query, DefaultValuePipe } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Req,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Delete,
+  HttpCode,
+  HttpStatus,
+  Query,
+  DefaultValuePipe,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport'; // Import AuthGuard
 import { PostService } from './post.service';
 import { CreatePostDto } from './dto/create-post.dto';
@@ -18,15 +33,35 @@ export class PostController {
   }
 
   @Get('/map')
-  getPostsMap() {
-    return this.postService.getPostsMap();
+  getPostsMap(
+    @Query('threshold', new DefaultValuePipe(0.9)) threshold: number,
+    @Query('k', new DefaultValuePipe(3), ParseIntPipe) k: number,
+    @Query('maxNodes', new DefaultValuePipe(200), ParseIntPipe)
+    maxNodes: number,
+    @Query('maxEdges', new DefaultValuePipe(2000), ParseIntPipe)
+    maxEdges: number,
+  ) {
+    return this.postService.getPostsMap({ threshold, k, maxNodes, maxEdges });
   }
 
   @UseGuards(AuthGuard('jwt'))
   @Get('/me/map')
-  getMyPostsMap(@Req() req: Request) {
+  getMyPostsMap(
+    @Req() req: Request,
+    @Query('threshold', new DefaultValuePipe(0.9)) threshold: number,
+    @Query('k', new DefaultValuePipe(3), ParseIntPipe) k: number,
+    @Query('maxNodes', new DefaultValuePipe(200), ParseIntPipe)
+    maxNodes: number,
+    @Query('maxEdges', new DefaultValuePipe(2000), ParseIntPipe)
+    maxEdges: number,
+  ) {
     const user = req.user as User;
-    return this.postService.getMyPostsMap(user.id);
+    return this.postService.getMyPostsMap(user.id, {
+      threshold,
+      k,
+      maxNodes,
+      maxEdges,
+    });
   }
 
   @UseGuards(AuthGuard('jwt'))
@@ -67,7 +102,10 @@ export class PostController {
   @UseGuards(AuthGuard('jwt'))
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param('id', ParseIntPipe) id: number, @Req() req: Request): Promise<void> {
+  async remove(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: Request,
+  ): Promise<void> {
     const user = req.user as User;
     await this.postService.remove(id, user);
   }

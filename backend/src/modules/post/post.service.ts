@@ -36,6 +36,11 @@ export interface PaginatedPostsResult {
 @Injectable()
 export class PostService {
   private readonly logger = new Logger(PostService.name); // Initialize logger
+  private readonly mapCache = new Map<
+    string,
+    { expiresAt: number; data: { nodes: PostNode[]; edges: PostEdge[] } }
+  >();
+  private readonly MAP_CACHE_TTL_MS = 60 * 1000; // 60 seconds
 
   constructor(
     private readonly postRepository: PostRepository,
@@ -67,11 +72,17 @@ export class PostService {
 
   private async generateAndUpdateEmbedding(post: Post): Promise<void> {
     try {
-      this.logger.log(`Generating and updating embedding for post ${post.id}...`);
+      this.logger.log(
+        `Generating and updating embedding for post ${post.id}...`,
+      );
       const embedding = await this.aiService.getEmbedding(
         `${post.title}\n\n${post.content}`,
       );
-      await this.vectorService.updateEmbedding(post.id, embedding, post.content);
+      await this.vectorService.updateEmbedding(
+        post.id,
+        embedding,
+        post.content,
+      );
       this.logger.log(`Successfully updated embedding for post ${post.id}.`);
     } catch (error) {
       this.logger.error(
@@ -85,14 +96,28 @@ export class PostService {
     return this.postRepository.findAll();
   }
 
-  async findAllPaginated(page: number, limit: number): Promise<PaginatedPostsResult> {
-    const [data, total] = await this.postRepository.findAllPaginated(page, limit);
+  async findAllPaginated(
+    page: number,
+    limit: number,
+  ): Promise<PaginatedPostsResult> {
+    const [data, total] = await this.postRepository.findAllPaginated(
+      page,
+      limit,
+    );
     const totalPages = Math.ceil(total / limit);
     return { data, pagination: { page, limit, total, totalPages } };
   }
 
-  async findByAuthorIdPaginated(authorId: number, page: number, limit: number): Promise<PaginatedPostsResult> {
-    const [data, total] = await this.postRepository.findByAuthorIdPaginated(authorId, page, limit);
+  async findByAuthorIdPaginated(
+    authorId: number,
+    page: number,
+    limit: number,
+  ): Promise<PaginatedPostsResult> {
+    const [data, total] = await this.postRepository.findByAuthorIdPaginated(
+      authorId,
+      page,
+      limit,
+    );
     const totalPages = Math.ceil(total / limit);
     return { data, pagination: { page, limit, total, totalPages } };
   }
@@ -105,59 +130,138 @@ export class PostService {
     return post;
   }
 
-  async getPostsMap(): Promise<{ nodes: PostNode[]; edges: PostEdge[] }> {
+  async getPostsMap(params?: {
+    threshold?: number;
+    k?: number;
+    maxNodes?: number;
+    maxEdges?: number;
+  }): Promise<{ nodes: PostNode[]; edges: PostEdge[] }> {
+    const threshold = params?.threshold ?? 0.9;
+    const k = params?.k ?? 3;
+    const maxNodes = params?.maxNodes ?? 200;
+    const maxEdges = params?.maxEdges ?? 2000;
     this.logger.log('Generating posts map...');
-    const allPosts = await this.postRepository.findAll();
-    const nodes: PostNode[] = allPosts.map((post) => ({ id: post.id, title: post.title }));
-    if (allPosts.length < 2) return { nodes, edges: [] };
 
-    const allEmbeddings = await this.vectorService.getAllEmbeddings();
+    const cacheKey = `postsMap:all:th=${threshold}:k=${k}:maxN=${maxNodes}:maxE=${maxEdges}`;
+    const cached = this.mapCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.data;
+    }
+    const allPosts = await this.postRepository.findAll();
+    // 노드 상한 적용
+    const limitedPosts = allPosts.slice(0, Math.max(0, maxNodes));
+    const nodes: PostNode[] = limitedPosts.map((post) => ({
+      id: post.id,
+      title: post.title,
+    }));
+    if (limitedPosts.length < 2) return { nodes, edges: [] };
+
+    const limitedPostIds = new Set(limitedPosts.map((p) => p.id));
+    const allEmbeddings = await this.vectorService.getEmbeddingsByPostIds([
+      ...limitedPostIds,
+    ]);
     const edges: PostEdge[] = [];
     const edgeSet = new Set<string>();
 
-    for (const { post_id, embedding } of allEmbeddings) {
-      const similarPosts = await this.vectorService.searchSimilarPosts(embedding);
-      for (const similar of similarPosts) {
+    // 병렬 유사도 검색 (상수 k/threshold 적용)
+    const searchResults = await Promise.all(
+      allEmbeddings.map(({ post_id, embedding }) =>
+        this.vectorService
+          .searchSimilarPosts(embedding, threshold, k)
+          .then((res) => ({ post_id, res })),
+      ),
+    );
+
+    for (const { post_id, res } of searchResults) {
+      for (const similar of res) {
         if (post_id === similar.post_id) continue;
+        if (!limitedPostIds.has(similar.post_id)) continue;
         const source = Math.min(post_id, similar.post_id);
         const target = Math.max(post_id, similar.post_id);
         const edgeKey = `${source}-${target}`;
         if (!edgeSet.has(edgeKey)) {
           edges.push({ source, target, similarity: similar.similarity });
           edgeSet.add(edgeKey);
+          if (edges.length >= maxEdges) break;
         }
       }
+      if (edges.length >= maxEdges) break;
     }
-    return { nodes, edges };
+    const result = { nodes, edges };
+    this.mapCache.set(cacheKey, {
+      expiresAt: Date.now() + this.MAP_CACHE_TTL_MS,
+      data: result,
+    });
+    return result;
   }
 
-  async getMyPostsMap(authorId: number): Promise<{ nodes: PostNode[]; edges: PostEdge[] }> {
+  async getMyPostsMap(
+    authorId: number,
+    params?: {
+      threshold?: number;
+      k?: number;
+      maxNodes?: number;
+      maxEdges?: number;
+    },
+  ): Promise<{ nodes: PostNode[]; edges: PostEdge[] }> {
+    const threshold = params?.threshold ?? 0.9;
+    const k = params?.k ?? 3;
+    const maxNodes = params?.maxNodes ?? 200;
+    const maxEdges = params?.maxEdges ?? 2000;
     this.logger.log(`Generating posts map for author ${authorId}...`);
-    const userPosts = await this.postRepository.findAllByAuthorId(authorId);
-    const nodes: PostNode[] = userPosts.map((post) => ({ id: post.id, title: post.title }));
-    if (userPosts.length < 2) return { nodes, edges: [] };
 
-    const postIds = userPosts.map((post) => post.id);
-    const userEmbeddings = await this.vectorService.getEmbeddingsByPostIds(postIds);
+    const cacheKey = `postsMap:user:${authorId}:th=${threshold}:k=${k}:maxN=${maxNodes}:maxE=${maxEdges}`;
+    const cached = this.mapCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.data;
+    }
+    const userPosts = await this.postRepository.findAllByAuthorId(authorId);
+    const limitedUserPosts = userPosts.slice(0, Math.max(0, maxNodes));
+    const nodes: PostNode[] = limitedUserPosts.map((post) => ({
+      id: post.id,
+      title: post.title,
+    }));
+    if (limitedUserPosts.length < 2) return { nodes, edges: [] };
+
+    const postIds = limitedUserPosts.map((post) => post.id);
+    const userEmbeddings =
+      await this.vectorService.getEmbeddingsByPostIds(postIds);
     const edges: PostEdge[] = [];
     const edgeSet = new Set<string>();
 
-    for (const { post_id, embedding } of userEmbeddings) {
-      const similarPosts = await this.vectorService.searchSimilarPosts(embedding);
-      const similarUserPostIds = new Set(similarPosts.map(p => p.post_id).filter(id => postIds.includes(id)));
+    const searchResults = await Promise.all(
+      userEmbeddings.map(({ post_id, embedding }) =>
+        this.vectorService
+          .searchSimilarPosts(embedding, threshold, k)
+          .then((res) => ({ post_id, res })),
+      ),
+    );
+
+    for (const { post_id, res } of searchResults) {
+      const similarUserPostIds = new Set(
+        res.map((p) => p.post_id).filter((id) => postIds.includes(id)),
+      );
       for (const similarId of similarUserPostIds) {
         if (post_id === similarId) continue;
         const source = Math.min(post_id, similarId);
         const target = Math.max(post_id, similarId);
         const edgeKey = `${source}-${target}`;
         if (!edgeSet.has(edgeKey)) {
-          const similarity = similarPosts.find(p => p.post_id === similarId)?.similarity || 0;
+          const similarity =
+            res.find((p) => p.post_id === similarId)?.similarity || 0;
           edges.push({ source, target, similarity });
           edgeSet.add(edgeKey);
+          if (edges.length >= maxEdges) break;
         }
       }
+      if (edges.length >= maxEdges) break;
     }
-    return { nodes, edges };
+    const result = { nodes, edges };
+    this.mapCache.set(cacheKey, {
+      expiresAt: Date.now() + this.MAP_CACHE_TTL_MS,
+      data: result,
+    });
+    return result;
   }
 
   async update(
@@ -167,7 +271,9 @@ export class PostService {
   ): Promise<Post> {
     const post = await this.findById(id);
     if (post.author.id !== user.id) {
-      throw new ForbiddenException('You are not authorized to update this post.');
+      throw new ForbiddenException(
+        'You are not authorized to update this post.',
+      );
     }
 
     Object.assign(post, updatePostDto);
@@ -181,13 +287,12 @@ export class PostService {
     return updatedPost;
   }
 
-  async remove(
-    id: number,
-    user: User,
-  ): Promise<void> {
+  async remove(id: number, user: User): Promise<void> {
     const post = await this.findById(id);
     if (post.author.id !== user.id) {
-      throw new ForbiddenException('You are not authorized to delete this post.');
+      throw new ForbiddenException(
+        'You are not authorized to delete this post.',
+      );
     }
 
     await this.postRepository.remove(post);
@@ -198,7 +303,10 @@ export class PostService {
       await this.vectorService.deleteEmbedding(id);
       this.logger.log(`Successfully deleted embedding for post ${id}.`);
     } catch (error) {
-      this.logger.error(`Failed to delete embedding for post ${id}`, error.stack);
+      this.logger.error(
+        `Failed to delete embedding for post ${id}`,
+        error.stack,
+      );
     }
   }
 }
