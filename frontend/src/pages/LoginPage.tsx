@@ -27,8 +27,7 @@ export default function LoginPage() {
       });
 
       const { accessToken } = response.data;
-      localStorage.setItem("accessToken", accessToken);
-      login(accessToken);
+      login(accessToken); // login 함수에서 localStorage에 저장함
       navigate("/");
     } catch (err: any) {
       if (err.response && err.response.data) {

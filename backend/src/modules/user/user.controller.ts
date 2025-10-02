@@ -1,7 +1,20 @@
-import { Controller, Post, Body, Get, Param, ParseIntPipe, Delete, HttpCode, HttpStatus } from '@nestjs/common'; // Re-add imports
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Param,
+  ParseIntPipe,
+  Delete,
+  HttpCode,
+  HttpStatus,
+  UseGuards,
+  Request,
+} from '@nestjs/common'; // Re-add imports
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginUserDto } from './dto/login-user.dto'; // Import LoginUserDto
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('user')
 export class UserController {
@@ -18,13 +31,27 @@ export class UserController {
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) { // Re-add ParseIntPipe
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    // Re-add ParseIntPipe
     return this.userService.findById(id);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT) // Return 204 No Content on successful deletion
-  async remove(@Param('id', ParseIntPipe) id: number): Promise<void> { // Re-add ParseIntPipe
+  async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
+    // Re-add ParseIntPipe
     await this.userService.deleteUser(id);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Get('/me')
+  async getProfile(@Request() req) {
+    return this.userService.findById(req.user.id);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Post('/generate-introduction')
+  async generateIntroduction(@Request() req) {
+    return this.userService.generateIntroduction(req.user.id);
   }
 }

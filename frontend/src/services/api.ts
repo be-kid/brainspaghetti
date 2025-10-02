@@ -25,6 +25,8 @@ api.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       // If we get a 401, the token is invalid or expired
       localStorage.removeItem("accessToken");
+      // Dispatch a custom event to notify AuthContext
+      window.dispatchEvent(new CustomEvent('auth-logout'));
       // Redirect without alert
       window.location.href = "/login";
     }

@@ -27,7 +27,10 @@ export class PostRepository {
     });
   }
 
-  async findAllPaginated(page: number, limit: number): Promise<[Post[], number]> {
+  async findAllPaginated(
+    page: number,
+    limit: number,
+  ): Promise<[Post[], number]> {
     const skip = (page - 1) * limit;
     return this.genericPostRepository.findAndCount({
       relations: ['author'],
@@ -45,7 +48,11 @@ export class PostRepository {
     });
   }
 
-  async findByAuthorIdPaginated(authorId: number, page: number, limit: number): Promise<[Post[], number]> {
+  async findByAuthorIdPaginated(
+    authorId: number,
+    page: number,
+    limit: number,
+  ): Promise<[Post[], number]> {
     const skip = (page - 1) * limit;
     return this.genericPostRepository.findAndCount({
       where: { author: { id: authorId } },
@@ -56,8 +63,24 @@ export class PostRepository {
     });
   }
 
+  async findByUserId(
+    userId: number,
+    page: number,
+    limit: number,
+  ): Promise<{ data: Post[]; total: number }> {
+    const [data, total] = await this.findByAuthorIdPaginated(
+      userId,
+      page,
+      limit,
+    );
+    return { data, total };
+  }
+
   async findById(id: number): Promise<Post | null> {
-    return this.genericPostRepository.findOne({ where: { id }, relations: ['author'] });
+    return this.genericPostRepository.findOne({
+      where: { id },
+      relations: ['author'],
+    });
   }
 
   async findByIds(ids: number[]): Promise<Post[]> {

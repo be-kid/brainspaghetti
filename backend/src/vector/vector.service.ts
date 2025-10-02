@@ -4,20 +4,31 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 @Injectable()
 export class VectorService {
-  private readonly supabase: SupabaseClient;
+  private readonly supabase: SupabaseClient | null = null;
 
   constructor(private readonly configService: ConfigService) {
     const supabaseUrl = this.configService.get<string>('SUPABASE_URL');
     const supabaseKey = this.configService.get<string>('SUPABASE_KEY');
 
     if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Supabase URL or Key is not defined in the environment variables.');
+      console.warn(
+        'Supabase URL or Key not found. Vector search features will be disabled.',
+      );
+      return;
     }
 
     this.supabase = createClient(supabaseUrl, supabaseKey);
   }
 
-  async saveEmbedding(postId: number, embedding: number[], content: string): Promise<void> {
+  async saveEmbedding(
+    postId: number,
+    embedding: number[],
+    content: string,
+  ): Promise<void> {
+    if (!this.supabase) {
+      console.warn('Supabase not configured. Skipping embedding save.');
+      return;
+    }
     const { error } = await this.supabase.from('post_embeddings').insert({
       post_id: postId,
       embedding: embedding,
@@ -26,11 +37,21 @@ export class VectorService {
 
     if (error) {
       console.error('Error saving embedding to Supabase:', error);
-      throw new InternalServerErrorException('Failed to save embedding to Supabase.');
+      throw new InternalServerErrorException(
+        'Failed to save embedding to Supabase.',
+      );
     }
   }
 
-  async updateEmbedding(postId: number, embedding: number[], content: string): Promise<void> {
+  async updateEmbedding(
+    postId: number,
+    embedding: number[],
+    content: string,
+  ): Promise<void> {
+    if (!this.supabase) {
+      console.warn('Supabase not configured. Skipping embedding update.');
+      return;
+    }
     const { error } = await this.supabase
       .from('post_embeddings')
       .update({ embedding, content })
@@ -43,6 +64,10 @@ export class VectorService {
   }
 
   async deleteEmbedding(postId: number): Promise<void> {
+    if (!this.supabase) {
+      console.warn('Supabase not configured. Skipping embedding deletion.');
+      return;
+    }
     const { error } = await this.supabase
       .from('post_embeddings')
       .delete()
@@ -55,6 +80,9 @@ export class VectorService {
   }
 
   async getEmbeddingByPostId(postId: number): Promise<number[]> {
+    if (!this.supabase) {
+      throw new InternalServerErrorException('Supabase not configured');
+    }
     const { data, error } = await this.supabase
       .from('post_embeddings')
       .select('embedding')
@@ -63,13 +91,20 @@ export class VectorService {
 
     if (error || !data) {
       console.error('Error fetching embedding:', error);
-      throw new InternalServerErrorException(`Could not find embedding for post ID ${postId}`);
+      throw new InternalServerErrorException(
+        `Could not find embedding for post ID ${postId}`,
+      );
     }
 
     return data.embedding;
   }
 
-  async getEmbeddingsByPostIds(postIds: number[]): Promise<{ post_id: number; embedding: number[] }[]> {
+  async getEmbeddingsByPostIds(
+    postIds: number[],
+  ): Promise<{ post_id: number; embedding: number[] }[]> {
+    if (!this.supabase) {
+      return [];
+    }
     if (postIds.length === 0) {
       return [];
     }
@@ -86,7 +121,12 @@ export class VectorService {
     return data || [];
   }
 
-  async getAllEmbeddings(): Promise<{ post_id: number; embedding: number[] }[]> {
+  async getAllEmbeddings(): Promise<
+    { post_id: number; embedding: number[] }[]
+  > {
+    if (!this.supabase) {
+      return [];
+    }
     const { data, error } = await this.supabase
       .from('post_embeddings')
       .select('post_id, embedding');
@@ -102,8 +142,11 @@ export class VectorService {
   async searchSimilarPosts(
     embedding: number[],
     match_threshold = 0.78, // Default threshold
-    match_count = 5,      // Default count
+    match_count = 5, // Default count
   ): Promise<{ post_id: number; similarity: number }[]> {
+    if (!this.supabase) {
+      return [];
+    }
     const { data, error } = await this.supabase.rpc('match_posts', {
       query_embedding: embedding,
       match_threshold: match_threshold,
@@ -112,7 +155,9 @@ export class VectorService {
 
     if (error) {
       console.error('Error searching for similar posts:', error);
-      throw new InternalServerErrorException('Failed to search for similar posts.');
+      throw new InternalServerErrorException(
+        'Failed to search for similar posts.',
+      );
     }
 
     return data || [];
