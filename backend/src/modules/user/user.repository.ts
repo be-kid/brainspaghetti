@@ -19,7 +19,10 @@ export class UserRepository {
     return this.genericUserRepository.findOne({ where: { id } });
   }
 
-  async createUser(createUserDto: CreateUserDto, password_hash: string): Promise<User> {
+  async createUser(
+    createUserDto: CreateUserDto,
+    password_hash: string,
+  ): Promise<User> {
     const newUser = this.genericUserRepository.create({
       email: createUserDto.email,
       password_hash,
@@ -29,5 +32,9 @@ export class UserRepository {
 
   async deleteUser(id: number): Promise<void> {
     await this.genericUserRepository.delete(id);
+  }
+
+  async updateUser(id: number, updateData: Partial<User>): Promise<void> {
+    await this.genericUserRepository.update(id, updateData);
   }
 }

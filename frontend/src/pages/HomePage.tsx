@@ -109,19 +109,87 @@ export default function HomePage() {
       value: edge.similarity,
     }));
 
-    const data = { nodes, edges };
+    // 영역전개 애니메이션: 모든 노드를 중앙에서 시작
+    const centerX = 0;
+    const centerY = 0;
+    const nodesWithCenterPositions = nodes.map((node) => ({
+      ...node,
+      x: centerX,
+      y: centerY,
+    }));
+
+    const data = { nodes: nodesWithCenterPositions, edges };
     const options: Options = {
       nodes: {
         shape: "box",
-        margin: 10,
-        font: { size: 14 },
+        margin: 15,
+        font: {
+          size: 16,
+          face: "Inter, SF Pro Display, sans-serif",
+          color: "#ffffff",
+          strokeWidth: 2,
+          strokeColor: "#000000",
+        },
+        borderWidth: 3,
+        borderWidthSelected: 4,
+        size: 25,
+        color: {
+          background: "#4a148c",
+          border: "#ff6b35",
+          highlight: {
+            background: "#8e24aa",
+            border: "#ff8a50",
+          },
+          hover: {
+            background: "#6a1b9a",
+            border: "#ff8a50",
+          },
+        },
+        scaling: {
+          min: 20,
+          max: 40,
+        },
+        shadow: {
+          enabled: true,
+          color: "rgba(255, 107, 53, 0.4)",
+          size: 10,
+          x: 0,
+          y: 4,
+        },
       },
       edges: {
         smooth: false,
+        color: {
+          color: "#ff6b35",
+          highlight: "#ff8a50",
+          hover: "#ff8a50",
+          opacity: 0.8,
+        },
+        width: 0.5,
+        selectionWidth: 1,
+        shadow: {
+          enabled: true,
+          color: "rgba(255, 107, 53, 0.3)",
+          size: 5,
+          x: 0,
+          y: 2,
+        },
       },
       physics: {
         enabled: true,
-        stabilization: { iterations: 200 },
+        stabilization: {
+          enabled: false, // 자동 안정화 비활성화
+        },
+        barnesHut: {
+          gravitationalConstant: -800, // 더 약한 중력
+          centralGravity: 0.05, // 더 약한 중앙 중력
+          springLength: 300, // 더 긴 스프링
+          springConstant: 0.01, // 더 약한 스프링
+          damping: 0.3, // 더 강한 댐핑 (느린 움직임)
+          avoidOverlap: 1,
+        },
+        timestep: 0.3, // 더 느린 시뮬레이션
+        adaptiveTimestep: true,
       },
       interaction: {
         dragNodes: true,
@@ -132,9 +200,11 @@ export default function HomePage() {
 
     networkInstance.current?.destroy();
     networkInstance.current = new Network(visJsRef.current, data, options);
-    networkInstance.current.once("stabilized", () => {
+
+    // 영역전개 애니메이션: 3초 후 물리 엔진 비활성화
+    setTimeout(() => {
       networkInstance.current?.setOptions({ physics: { enabled: false } });
-    });
+    }, 3000);
     networkInstance.current.on("doubleClick", (params) => {
       if (params.nodes.length > 0) navigate(`/posts/${params.nodes[0]}`);
     });
@@ -202,6 +272,7 @@ export default function HomePage() {
   const renderMapView = () => (
     <>
       <div
+        className="mindmap-controls"
         style={{
           display: "flex",
           gap: "1rem",
@@ -238,7 +309,8 @@ export default function HomePage() {
       </div>
       <div
         ref={visJsRef}
-        style={{ height: "70vh", border: "1px solid #ccc" }}
+        className="mindmap-container mindmap-expansion"
+        style={{ height: "70vh" }}
       />
     </>
   );
@@ -259,8 +331,7 @@ export default function HomePage() {
           마인드맵 보기
         </Button>
       </div>
-      <h1>{viewMode === "list" ? "전체 글" : "마인드맵"}</h1>
-      {loading && <p>Loading...</p>}
+      {loading && <div className="mindmap-loading"></div>}
       {error && <p style={{ color: "red" }}>{error}</p>}
       {!loading &&
         !error &&

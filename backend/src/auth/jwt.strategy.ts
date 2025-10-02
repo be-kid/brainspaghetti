@@ -18,7 +18,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    const user = await this.userService.findById(payload.sub); // payload.sub is user ID
+    const userId = parseInt(payload.sub, 10); // Convert string to number
+    if (isNaN(userId)) {
+      throw new UnauthorizedException('Invalid user ID in token');
+    }
+    const user = await this.userService.findById(userId);
     if (!user) {
       throw new UnauthorizedException();
     }

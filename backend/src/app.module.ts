@@ -14,7 +14,6 @@ import { VectorModule } from './vector/vector.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '../../.env',
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -36,7 +35,7 @@ import { VectorModule } from './vector/vector.module';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: '1h' }, // Token expiration time
+        signOptions: { expiresIn: '24h' }, // Token expiration time
       }),
       global: true, // Make JwtModule global
     }),

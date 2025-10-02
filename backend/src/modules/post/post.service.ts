@@ -11,6 +11,7 @@ import { User } from '@/modules/user/entities/user.entity';
 import { Post } from './entities/post.entity';
 import { AiService } from '@/ai/ai.service'; // Import AiService
 import { VectorService } from '@/vector/vector.service'; // Import VectorService
+import { UserRepository } from '@/modules/user/user.repository';
 
 export interface PostNode {
   id: number;
@@ -46,12 +47,58 @@ export class PostService {
     private readonly postRepository: PostRepository,
     private readonly aiService: AiService, // Inject AiService
     private readonly vectorService: VectorService, // Inject VectorService
+    private readonly userRepository: UserRepository,
   ) {}
 
   async create(createPostDto: CreatePostDto, author: User): Promise<Post> {
     const newPost = await this.postRepository.createPost(createPostDto, author);
     this.generateAndSaveEmbedding(newPost);
+
+    // 자동 AI 소개글 생성 트리거 (10개 간격)
+    this.checkAndGenerateIntroduction(author.id);
+
     return newPost;
+  }
+
+  private async checkAndGenerateIntroduction(userId: number): Promise<void> {
+    try {
+      // 사용자의 총 포스트 개수 확인
+      const userPosts = await this.postRepository.findAllByAuthorId(userId);
+      const postCount = userPosts.length;
+
+      // 10개 간격으로 자동 생성 (10, 20, 30, 40, ...)
+      if (postCount >= 10 && postCount % 10 === 0) {
+        this.logger.log(
+          `Auto-generating AI introduction for user ${userId} (${postCount} posts)`,
+        );
+
+        // 최근 20개 글 가져오기
+        const recentPosts = userPosts.slice(0, 20);
+        const postsForAI = recentPosts.map((post) => ({
+          title: post.title,
+          content: post.content,
+        }));
+
+        // AI 소개글 생성
+        const aiIntroduction =
+          await this.aiService.generateIntroduction(postsForAI);
+
+        // 사용자 정보 업데이트
+        await this.userRepository.updateUser(userId, {
+          aiIntroduction,
+          lastIntroductionGenerated: new Date(),
+        });
+
+        this.logger.log(
+          `Successfully auto-generated AI introduction for user ${userId}: "${aiIntroduction}"`,
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to auto-generate AI introduction for user ${userId}`,
+        error.stack,
+      );
+    }
   }
 
   private async generateAndSaveEmbedding(post: Post): Promise<void> {

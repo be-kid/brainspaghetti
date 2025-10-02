@@ -4,10 +4,12 @@ import api from "../services/api";
 import { Form, Button, Alert } from "react-bootstrap"; // Import Form, Button, Alert
 import { useToast } from "../contexts/ToastContext";
 import { SpinnerInline } from "../components/Loading";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function PostEditPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { isLoggedIn, isLoading } = useAuth();
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -16,7 +18,17 @@ export default function PostEditPage() {
   const [pageLoading, setPageLoading] = useState(true); // For initial data fetch
   const { showToast } = useToast();
 
+  // 로그인 체크 - 로딩이 완료된 후에만 실행
   useEffect(() => {
+    if (!isLoading && !isLoggedIn) {
+      navigate("/login");
+      return;
+    }
+  }, [isLoggedIn, isLoading, navigate]);
+
+  useEffect(() => {
+    if (isLoading || !isLoggedIn) return; // 로그인 확인 후 실행
+
     const fetchPost = async () => {
       try {
         const response = await api.get(`/post/${id}`);
@@ -30,7 +42,7 @@ export default function PostEditPage() {
       }
     };
     fetchPost();
-  }, [id]);
+  }, [id, isLoading, isLoggedIn]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,6 +74,16 @@ export default function PostEditPage() {
       setLoading(false);
     }
   };
+
+  // AuthContext가 로딩 중이면 로딩 표시
+  if (isLoading) {
+    return <div>인증 정보를 확인하는 중...</div>;
+  }
+
+  // 로그인되지 않은 경우 (로딩 완료 후)
+  if (!isLoggedIn) {
+    return null; // navigate가 실행되므로 아무것도 렌더링하지 않음
+  }
 
   if (pageLoading) return <p>게시글 불러오는 중...</p>;
 

@@ -1,17 +1,27 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 import { Form, Button, Alert } from "react-bootstrap"; // Import Form, Button, Alert
 import { useToast } from "../contexts/ToastContext";
 import { SpinnerInline } from "../components/Loading";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function PostCreatePage() {
+  const { isLoggedIn, isLoading } = useAuth();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { showToast } = useToast();
+
+  // 로그인 체크 - 로딩이 완료된 후에만 실행
+  useEffect(() => {
+    if (!isLoading && !isLoggedIn) {
+      navigate("/login");
+      return;
+    }
+  }, [isLoggedIn, isLoading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +56,16 @@ export default function PostCreatePage() {
       setLoading(false);
     }
   };
+
+  // AuthContext가 로딩 중이면 로딩 표시
+  if (isLoading) {
+    return <div>인증 정보를 확인하는 중...</div>;
+  }
+
+  // 로그인되지 않은 경우 (로딩 완료 후)
+  if (!isLoggedIn) {
+    return null; // navigate가 실행되므로 아무것도 렌더링하지 않음
+  }
 
   return (
     <div>

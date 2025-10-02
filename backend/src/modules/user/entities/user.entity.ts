@@ -24,6 +24,12 @@ export class User {
   @OneToMany(() => Post, (post) => post.author)
   posts: Post[];
 
+  @Column({ nullable: true })
+  aiIntroduction: string;
+
+  @Column({ nullable: true })
+  lastIntroductionGenerated: Date;
+
   @CreateDateColumn()
   createdAt: Date;
 
