@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import api from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../contexts/ToastContext";
@@ -47,11 +47,15 @@ export default function PostDetailPage() {
     fetchPost();
   }, [id]);
 
+  const location = useLocation();
+
   const handleDelete = async () => {
     if (window.confirm("Are you sure you want to delete this post?")) {
       try {
         await api.delete(`/post/${id}`);
-        navigate("/");
+        // Navigate to the previous page, or default to /posts
+        const from = location.state?.from || "/posts";
+        navigate(from);
       } catch (err) {
         console.error(err);
         showToast({
@@ -73,7 +77,7 @@ export default function PostDetailPage() {
       <h1>{post.title}</h1>
       <div
         style={{
-          color: "#555",
+          color: "#b0b0b0", // Changed from #555 for better visibility
           marginBottom: "1rem",
           display: "flex",
           justifyContent: "space-between",
@@ -100,7 +104,13 @@ export default function PostDetailPage() {
           </div>
         )}
       </div>
-      <div style={{ whiteSpace: "pre-wrap", lineHeight: "1.6" }}>
+      <div
+        style={{
+          whiteSpace: "pre-wrap",
+          lineHeight: "1.6",
+          color: "#e8e8e8", // Explicitly set light color
+        }}
+      >
         {post.content}
       </div>
     </article>

@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Container } from 'react-bootstrap';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -7,6 +7,11 @@ import { useAuth } from '../contexts/AuthContext';
 
 export default function MainLayout() {
   const { isLoggedIn } = useAuth();
+  const location = useLocation();
+  const { pathname } = location;
+
+  // Hide FAB on create and edit pages
+  const showFab = isLoggedIn && pathname !== '/posts/new' && !pathname.endsWith('/edit');
 
   return (
     <div>
@@ -17,7 +22,7 @@ export default function MainLayout() {
         </Container>
       </main>
       <Footer />
-      {isLoggedIn && <FloatingActionButton />}
+      {showFab && <FloatingActionButton />}
     </div>
   );
 }

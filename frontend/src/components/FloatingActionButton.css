@@ -1,0 +1,27 @@
+.fab {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff6b35 0%, #ff8a50 100%);
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.5rem;
+  text-decoration: none;
+  border: 2px solid #ff8a50;
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);
+  z-index: 1000;
+  transition: all 0.3s ease;
+}
+
+.fab:hover {
+  background: linear-gradient(135deg, #ff8a50 0%, #ffab40 100%);
+  border-color: #ffab40;
+  box-shadow: 0 8px 24px rgba(255, 138, 80, 0.5);
+  transform: translateY(-2px);
+  color: white;
+}

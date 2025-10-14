@@ -40,6 +40,38 @@
 
 ---
 
+## 날짜: 2025-10-02
+
+### 주요 변경/결정
+
+- **로그인 새로고침 문제 해결**
+  - JWT 토큰 만료 시간 연장: 1시간 → 24시간
+  - AuthContext에 로딩 상태(`isLoading`) 추가하여 토큰 검증 완료 전 라우팅 보호 로직 실행 방지
+  - 토큰 만료 체크 로직 추가: `isTokenExpired` 함수로 JWT exp 필드 검증
+  - API 인터셉터와 AuthContext 상태 동기화: 401 에러 시 커스텀 이벤트(`auth-logout`) 발생
+  - 보호된 페이지들(ProfilePage, PostCreatePage, PostEditPage)에 인증 체크 로직 추가
+
+### 근거/메모
+
+- **문제 원인**: 새로고침 시 AuthContext 초기화 중 비동기 토큰 검증이 완료되기 전에 라우팅 보호 로직이 먼저 실행되어 로그인 페이지로 리다이렉트
+- **해결 방법**:
+  1. 로딩 상태 도입으로 토큰 검증 완료 전까지 라우팅 결정 지연
+  2. 토큰 만료 시간 체크로 유효하지 않은 토큰 자동 제거
+  3. API 에러와 Context 상태 동기화로 일관된 인증 상태 유지
+- **부가 효과**: PostCreatePage, PostEditPage에 누락되었던 인증 체크 추가로 보안 강화
+
+### 커밋/PR
+
+- 커밋: `6639e1b9` (Fix: 로그인 새로고침 시 로그인 유지 문제 해결)
+- 변경 파일: 21개 (backend 12개, frontend 9개)
+- 주요 변경:
+  - `backend/src/app.module.ts`: JWT expiresIn '1h' → '24h'
+  - `frontend/src/contexts/AuthContext.tsx`: isLoading 상태, isTokenExpired 함수, 이벤트 리스너 추가
+  - `frontend/src/services/api.ts`: 401 에러 시 auth-logout 이벤트 발생
+  - `frontend/src/pages/ProfilePage.tsx`, `PostCreatePage.tsx`, `PostEditPage.tsx`: 인증 체크 로직 추가
+
+---
+
 ### 향후 기록 추가 템플릿
 
 ```

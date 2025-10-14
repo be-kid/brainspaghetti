@@ -268,7 +268,7 @@ export default function ProfilePage() {
       networkInstance.current?.setOptions({ physics: { enabled: false } });
     }, 3000);
     networkInstance.current.on("doubleClick", (params) => {
-      if (params.nodes.length > 0) navigate(`/posts/${params.nodes[0]}`);
+      if (params.nodes.length > 0) navigate(`/posts/${params.nodes[0]}`, { state: { from: '/profile' } });
     });
 
     return () => {
@@ -290,7 +290,7 @@ export default function ProfilePage() {
                   by {post.author.email}
                 </Card.Subtitle>
                 <Card.Text>{post.content.substring(0, 100)}...</Card.Text>
-                <Link to={`/posts/${post.id}`}>
+                <Link to={`/posts/${post.id}`} state={{ from: '/profile' }}>
                   <Button variant="primary">자세히 보기</Button>
                 </Link>
               </Card.Body>
@@ -317,7 +317,7 @@ export default function ProfilePage() {
           >
             이전
           </Button>
-          <span>
+          <span style={{ color: '#e8e8e8' }}>
             Page {page} of {totalPages}
           </span>
           <Button

@@ -50,7 +50,7 @@ export default function PostListPage() {
         <ul style={{ listStyle: 'none', padding: 0 }}>
           {posts.map((post) => (
             <li key={post.id} style={{ marginBottom: '1rem', border: '1px solid #ccc', padding: '1rem' }}>
-              <Link to={`/posts/${post.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Link to={`/posts/${post.id}`} state={{ from: '/posts' }} style={{ textDecoration: 'none', color: 'inherit' }}>
                 <h2>{post.title}</h2>
               </Link>
               <p>by {post.author.email}</p>
