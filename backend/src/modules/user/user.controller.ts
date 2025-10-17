@@ -30,6 +30,18 @@ export class UserController {
     return this.userService.login(loginUserDto);
   }
 
+  @UseGuards(AuthGuard('jwt'))
+  @Get('me')
+  async getProfile(@Request() req) {
+    return this.userService.findById(req.user.id);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Post('generate-introduction')
+  async generateIntroduction(@Request() req) {
+    return this.userService.generateIntroduction(req.user.id);
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     // Re-add ParseIntPipe
@@ -41,17 +53,5 @@ export class UserController {
   async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     // Re-add ParseIntPipe
     await this.userService.deleteUser(id);
-  }
-
-  @UseGuards(AuthGuard('jwt'))
-  @Get('/me')
-  async getProfile(@Request() req) {
-    return this.userService.findById(req.user.id);
-  }
-
-  @UseGuards(AuthGuard('jwt'))
-  @Post('/generate-introduction')
-  async generateIntroduction(@Request() req) {
-    return this.userService.generateIntroduction(req.user.id);
   }
 }

@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import api from '../services/api';
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import api from "../services/api";
 
 // Define the types for our data
 interface Author {
@@ -25,10 +25,10 @@ export default function PostListPage() {
     const fetchPosts = async () => {
       try {
         setLoading(true);
-        const response = await api.get<Post[]>('/post');
+        const response = await api.get<Post[]>("/post");
         setPosts(response.data);
       } catch (err) {
-        setError('Failed to fetch posts.');
+        setError("Failed to fetch posts.");
         console.error(err);
       } finally {
         setLoading(false);
@@ -39,7 +39,7 @@ export default function PostListPage() {
   }, []); // Empty dependency array means this runs once on mount
 
   if (loading) return <p>Loading posts...</p>;
-  if (error) return <p style={{ color: 'red' }}>{error}</p>;
+  if (error) return <p style={{ color: "red" }}>{error}</p>;
 
   return (
     <div>
@@ -47,14 +47,35 @@ export default function PostListPage() {
       {posts.length === 0 ? (
         <p>No posts found.</p>
       ) : (
-        <ul style={{ listStyle: 'none', padding: 0 }}>
+        <ul style={{ listStyle: "none", padding: 0 }}>
           {posts.map((post) => (
-            <li key={post.id} style={{ marginBottom: '1rem', border: '1px solid #ccc', padding: '1rem' }}>
-              <Link to={`/posts/${post.id}`} state={{ from: '/posts' }} style={{ textDecoration: 'none', color: 'inherit' }}>
+            <li
+              key={post.id}
+              style={{
+                marginBottom: "1rem",
+                border: "1px solid #ccc",
+                padding: "1rem",
+                cursor: "pointer",
+                transition: "background-color 0.2s",
+              }}
+            >
+              <Link
+                to={`/posts/${post.id}`}
+                state={{ from: "/posts" }}
+                style={{
+                  textDecoration: "none",
+                  color: "inherit",
+                  display: "block",
+                }}
+              >
                 <h2>{post.title}</h2>
+                <p>by {post.author.email}</p>
+                <small>
+                  {new Date(post.createdAt).toLocaleDateString("ko-KR", {
+                    timeZone: "Asia/Seoul",
+                  })}
+                </small>
               </Link>
-              <p>by {post.author.email}</p>
-              <small>{new Date(post.createdAt).toLocaleDateString()}</small>
             </li>
           ))}
         </ul>

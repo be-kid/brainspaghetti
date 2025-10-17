@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import api from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../contexts/ToastContext";
+import ConfirmModal from "../components/ConfirmModal";
 
 // Define the types for our data
 interface Author {
@@ -20,13 +21,13 @@ interface Post {
 
 export default function PostDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { user } = useAuth(); // Get current user
-  const { isAuthenticated, authToken } = useAuth();
+  const { user } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -49,20 +50,26 @@ export default function PostDetailPage() {
 
   const location = useLocation();
 
-  const handleDelete = async () => {
-    if (window.confirm("Are you sure you want to delete this post?")) {
-      try {
-        await api.delete(`/post/${id}`);
-        // Navigate to the previous page, or default to /posts
-        const from = location.state?.from || "/posts";
-        navigate(from);
-      } catch (err) {
-        console.error(err);
-        showToast({
-          variant: "danger",
-          message: "게시글 삭제에 실패했습니다.",
-        });
-      }
+  const handleDeleteClick = () => {
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await api.delete(`/post/${id}`);
+      showToast({
+        variant: "success",
+        message: "게시글이 삭제되었습니다.",
+      });
+      // Navigate to the previous page, or default to /posts
+      const from = location.state?.from || "/posts";
+      navigate(from);
+    } catch (err) {
+      console.error(err);
+      showToast({
+        variant: "danger",
+        message: "게시글 삭제에 실패했습니다.",
+      });
     }
   };
 
@@ -87,7 +94,9 @@ export default function PostDetailPage() {
         <div>
           <span>by {post.author.email}</span>
           <span style={{ marginLeft: "1rem" }}>
-            {new Date(post.createdAt).toLocaleDateString()}
+            {new Date(post.createdAt).toLocaleDateString("ko-KR", {
+              timeZone: "Asia/Seoul",
+            })}
           </span>
         </div>
         {isAuthor && (
@@ -96,7 +105,7 @@ export default function PostDetailPage() {
               <button>수정</button>
             </Link>
             <button
-              onClick={handleDelete}
+              onClick={handleDeleteClick}
               style={{ backgroundColor: "#dc3545", color: "white" }}
             >
               삭제
@@ -113,6 +122,17 @@ export default function PostDetailPage() {
       >
         {post.content}
       </div>
+
+      <ConfirmModal
+        show={showDeleteModal}
+        onHide={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteConfirm}
+        title="게시글 삭제"
+        message="정말로 이 게시글을 삭제하시겠습니까?"
+        confirmText="삭제"
+        cancelText="취소"
+        variant="danger"
+      />
     </article>
   );
 }

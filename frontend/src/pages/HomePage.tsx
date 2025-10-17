@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 import { Network } from "vis-network";
 import type { Node, Edge, Options } from "vis-network";
-import { Row, Col, Card, Button } from "react-bootstrap"; // Import Row, Col, Card, Button
+import { Row, Col, Card, Button } from "react-bootstrap";
 
 // Common types
 interface Author {
@@ -220,20 +220,63 @@ export default function HomePage() {
       {posts.length === 0 && !loading && <p>게시글이 없습니다.</p>}
       <Row xs={1} md={2} className="g-4">
         {posts.map((post) => (
-          <Col key={post.id}>
-            <Card>
-              <Card.Body>
-                <Card.Title>{post.title}</Card.Title>
+          <Col key={post.id} style={{ display: "flex" }}>
+            <Card
+              onClick={() => navigate(`/posts/${post.id}`)}
+              style={{
+                cursor: "pointer",
+                transition: "transform 0.2s, box-shadow 0.2s",
+                width: "100%",
+                display: "flex",
+                flexDirection: "column",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.boxShadow =
+                  "0 4px 12px rgba(255, 107, 53, 0.3)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "";
+              }}
+            >
+              <Card.Body
+                style={{ flex: 1, display: "flex", flexDirection: "column" }}
+              >
+                <Card.Title
+                  style={{
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical",
+                    minHeight: "3em",
+                  }}
+                >
+                  {post.title}
+                </Card.Title>
                 <Card.Subtitle className="mb-2 text-muted">
                   by {post.author.email}
                 </Card.Subtitle>
-                <Card.Text>{post.content.substring(0, 100)}...</Card.Text>
-                <Link to={`/posts/${post.id}`}>
-                  <Button variant="primary">자세히 보기</Button>
-                </Link>
+                <Card.Text
+                  style={{
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    display: "-webkit-box",
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: "vertical",
+                    flex: 1,
+                  }}
+                >
+                  {post.content}
+                </Card.Text>
               </Card.Body>
               <Card.Footer className="text-muted">
-                <small>{new Date(post.createdAt).toLocaleDateString()}</small>
+                <small>
+                  {new Date(post.createdAt).toLocaleDateString("ko-KR", {
+                    timeZone: "Asia/Seoul",
+                  })}
+                </small>
               </Card.Footer>
             </Card>
           </Col>
@@ -322,13 +365,13 @@ export default function HomePage() {
           onClick={() => setViewMode("list")}
           disabled={viewMode === "list"}
         >
-          목록 보기
+          술식 목록
         </Button>
         <Button
           onClick={() => setViewMode("map")}
           disabled={viewMode === "map"}
         >
-          마인드맵 보기
+          영역전개
         </Button>
       </div>
       {loading && <div className="mindmap-loading"></div>}

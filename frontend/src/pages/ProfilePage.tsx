@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 import { Network } from "vis-network";
 import type { Node, Edge, Options } from "vis-network";
-import { Row, Col, Card, Button } from "react-bootstrap"; // Import Row, Col, Card, Button
+import { Row, Col, Card, Button } from "react-bootstrap";
 import { useAuth } from "../contexts/AuthContext";
 
 // Common types
@@ -66,6 +66,7 @@ export default function ProfilePage() {
   // User profile state
   const [user, setUser] = useState<User | null>(null);
   const [aiIntroLoading, setAiIntroLoading] = useState(false);
+  const [aiIntroError, setAiIntroError] = useState<string | null>(null);
 
   // Common state
   const [loading, setLoading] = useState(true);
@@ -95,6 +96,7 @@ export default function ProfilePage() {
     if (!user) return;
 
     setAiIntroLoading(true);
+    setAiIntroError(null);
     try {
       const response = await api.post<{ aiIntroduction: string }>(
         "/user/generate-introduction"
@@ -104,9 +106,9 @@ export default function ProfilePage() {
       );
     } catch (err: any) {
       const errorMessage =
-        err.response?.data?.message || "AI 소개글 생성에 실패했습니다.";
-      setError(errorMessage);
-      setTimeout(() => setError(null), 5000);
+        err.response?.data?.message || "각인 생성에 실패했습니다.";
+      setAiIntroError(errorMessage);
+      setTimeout(() => setAiIntroError(null), 5000);
     } finally {
       setAiIntroLoading(false);
     }
@@ -268,7 +270,8 @@ export default function ProfilePage() {
       networkInstance.current?.setOptions({ physics: { enabled: false } });
     }, 3000);
     networkInstance.current.on("doubleClick", (params) => {
-      if (params.nodes.length > 0) navigate(`/posts/${params.nodes[0]}`, { state: { from: '/profile' } });
+      if (params.nodes.length > 0)
+        navigate(`/posts/${params.nodes[0]}`, { state: { from: "/profile" } });
     });
 
     return () => {
@@ -282,20 +285,65 @@ export default function ProfilePage() {
       {posts.length === 0 && !loading && <p>게시글이 없습니다.</p>}
       <Row xs={1} md={2} className="g-4">
         {posts.map((post) => (
-          <Col key={post.id}>
-            <Card>
-              <Card.Body>
-                <Card.Title>{post.title}</Card.Title>
+          <Col key={post.id} style={{ display: "flex" }}>
+            <Card
+              onClick={() =>
+                navigate(`/posts/${post.id}`, { state: { from: "/profile" } })
+              }
+              style={{
+                cursor: "pointer",
+                transition: "transform 0.2s, box-shadow 0.2s",
+                width: "100%",
+                display: "flex",
+                flexDirection: "column",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.boxShadow =
+                  "0 4px 12px rgba(255, 107, 53, 0.3)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "";
+              }}
+            >
+              <Card.Body
+                style={{ flex: 1, display: "flex", flexDirection: "column" }}
+              >
+                <Card.Title
+                  style={{
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical",
+                    minHeight: "3em",
+                  }}
+                >
+                  {post.title}
+                </Card.Title>
                 <Card.Subtitle className="mb-2 text-muted">
                   by {post.author.email}
                 </Card.Subtitle>
-                <Card.Text>{post.content.substring(0, 100)}...</Card.Text>
-                <Link to={`/posts/${post.id}`} state={{ from: '/profile' }}>
-                  <Button variant="primary">자세히 보기</Button>
-                </Link>
+                <Card.Text
+                  style={{
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    display: "-webkit-box",
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: "vertical",
+                    flex: 1,
+                  }}
+                >
+                  {post.content}
+                </Card.Text>
               </Card.Body>
               <Card.Footer className="text-muted">
-                <small>{new Date(post.createdAt).toLocaleDateString()}</small>
+                <small>
+                  {new Date(post.createdAt).toLocaleDateString("ko-KR", {
+                    timeZone: "Asia/Seoul",
+                  })}
+                </small>
               </Card.Footer>
             </Card>
           </Col>
@@ -317,7 +365,7 @@ export default function ProfilePage() {
           >
             이전
           </Button>
-          <span style={{ color: '#e8e8e8' }}>
+          <span style={{ color: "#e8e8e8" }}>
             Page {page} of {totalPages}
           </span>
           <Button
@@ -389,20 +437,20 @@ export default function ProfilePage() {
 
   return (
     <div>
-      {/* AI 소개글 섹션 */}
+      {/* 주술사의 각인 섹션 */}
       <Card style={{ marginBottom: "2rem" }}>
         <Card.Body>
           <Card.Title
             style={{ display: "flex", alignItems: "center", gap: "1rem" }}
           >
-            🤖 AI 한줄소개
+            ⚡ 주술사의 각인
             <Button
               size="sm"
               onClick={generateAiIntroduction}
               disabled={aiIntroLoading || !user}
               style={{ fontSize: "0.8rem" }}
             >
-              {aiIntroLoading ? "생성 중..." : "새로 생성"}
+              {aiIntroLoading ? "각인 중..." : "새로 각인"}
             </Button>
           </Card.Title>
           {!user ? (
@@ -421,15 +469,25 @@ export default function ProfilePage() {
             </Card.Text>
           ) : (
             <Card.Text style={{ color: "#888" }}>
-              AI 소개글이 없습니다. 10개 이상의 글을 작성하면 자동으로
-              생성되거나, 직접 생성할 수 있습니다.
+              아직 각인이 새겨지지 않았습니다. 10개 이상의 술식을 작성하면
+              자동으로 각인되거나, 직접 각인할 수 있습니다.
             </Card.Text>
           )}
           {user?.lastIntroductionGenerated && (
-            <small style={{ color: "#666" }}>
-              마지막 생성:{" "}
-              {new Date(user.lastIntroductionGenerated).toLocaleDateString()}
+            <small
+              style={{ color: "#666", display: "block", marginTop: "0.5rem" }}
+            >
+              마지막 각인:{" "}
+              {new Date(user.lastIntroductionGenerated).toLocaleDateString(
+                "ko-KR",
+                { timeZone: "Asia/Seoul" }
+              )}
             </small>
+          )}
+          {aiIntroError && (
+            <Card.Text style={{ color: "#ff6b6b", marginTop: "0.5rem" }}>
+              ⚠️ {aiIntroError}
+            </Card.Text>
           )}
         </Card.Body>
       </Card>
@@ -439,13 +497,13 @@ export default function ProfilePage() {
           onClick={() => setViewMode("list")}
           disabled={viewMode === "list"}
         >
-          목록 보기
+          술식 목록
         </Button>
         <Button
           onClick={() => setViewMode("map")}
           disabled={viewMode === "map"}
         >
-          마인드맵 보기
+          영역전개
         </Button>
       </div>
       {loading && <div className="mindmap-loading"></div>}

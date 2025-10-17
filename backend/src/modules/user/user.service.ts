@@ -94,7 +94,7 @@ export class UserService {
 
       if (hoursDiff < 24) {
         throw new BadRequestException(
-          'AI 소개글은 하루에 한 번만 생성할 수 있습니다.',
+          '주력이 고갈되었습니다. 하루에 한 번만 각인할 수 있습니다.',
         );
       }
     }
@@ -104,7 +104,7 @@ export class UserService {
 
     if (posts.data.length < 10) {
       throw new BadRequestException(
-        'AI 소개글 생성을 위해서는 최소 10개의 글이 필요합니다.',
+        '각인을 새기기에는 주력이 부족합니다. 최소 10개의 술식이 필요합니다.',
       );
     }
 
